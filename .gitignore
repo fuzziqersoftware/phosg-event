@@ -1,0 +1,10 @@
+.DS_Store
+*.dSYM
+*.o
+gmon.out
+libphosg-event.a
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
