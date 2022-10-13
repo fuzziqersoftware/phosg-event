@@ -66,6 +66,7 @@ BufferEvent& BufferEvent::operator=(BufferEvent&& other) {
 
 BufferEvent::~BufferEvent() {
   if (this->owned && this->bev) {
+    bufferevent_flush(this->bev, EV_WRITE, BEV_FINISHED);
     bufferevent_free(this->bev);
   }
 }
