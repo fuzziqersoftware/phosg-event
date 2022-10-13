@@ -33,8 +33,6 @@ public:
   StreamServer& operator=(StreamServer&&) = delete;
   virtual ~StreamServer() = default;
 
-  explicit StreamServer(EventBase& base) : base(base) { }
-
   void listen(const std::string& socket_path) {
     this->add_socket(::listen(socket_path, 0, SOMAXCONN));
   }
@@ -64,6 +62,9 @@ public:
   }
 
 protected:
+  explicit StreamServer(EventBase& base, const char* log_prefix = "[StreamServer] ")
+    : base(base), log(log_prefix) { }
+
   struct Client {
     BufferEvent bev;
     struct sockaddr_storage remote_addr;
@@ -86,6 +87,7 @@ protected:
   EventBase base;
   std::vector<Listener> listeners;
   std::unordered_map<struct bufferevent*, Client> bev_to_client;
+  PrefixedLogger log;
 
   void disconnect_client(Client& c) {
     auto it = this->bev_to_client.find(c.bev.get());
@@ -96,16 +98,33 @@ protected:
   }
 
   static void dispatch_on_listen_accept(
-      struct evconnlistener* listener, evutil_socket_t fd,
-      struct sockaddr* address, int socklen, void* ctx) {
+      struct evconnlistener*,
+      evutil_socket_t fd,
+      struct sockaddr*,
+      int,
+      void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    s->on_listen_accept(listener, fd, address, socklen);
+    BufferEvent bev(s->base, fd, BEV_OPT_CLOSE_ON_FREE);
+    bufferevent* bev_ptr = bev.get();
+    auto emplace_ret = s->bev_to_client.emplace(std::piecewise_construct,
+        std::forward_as_tuple(bev_ptr),
+        std::forward_as_tuple(s, std::move(bev)));
+    try {
+      s->on_client_connect(emplace_ret.first->second);
+    } catch (const std::exception& e) {
+      s->log.error("Error handling client connection: %s", e.what());
+      s->disconnect_client(emplace_ret.first->second);
+    }
   }
 
   static void dispatch_on_listen_error(
       struct evconnlistener* listener, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    s->on_listen_error(listener);
+    int err = EVUTIL_SOCKET_ERROR();
+    s->log.error("[StreamServer] Failure on listening socket %d: %d (%s)",
+        evconnlistener_get_fd(listener),
+        err,
+        evutil_socket_error_to_string(err));
   }
 
   static void dispatch_on_client_input(
@@ -118,7 +137,12 @@ protected:
       bufferevent_free(bev);
     }
     if (c) {
-      s->on_client_input(*c);
+      try {
+        s->on_client_input(*c);
+      } catch (const std::exception& e) {
+        s->log.error("Error handling client input: %s", e.what());
+        s->disconnect_client(*c);
+      }
     }
   }
 
@@ -132,40 +156,18 @@ protected:
       bufferevent_free(bev);
     }
     if (c) {
-      s->on_client_error(*c, events);
+      if (events & BEV_EVENT_ERROR) {
+        int err = EVUTIL_SOCKET_ERROR();
+        s->log.warning("[StreamServer] Client caused error %d (%s)",
+            err, evutil_socket_error_to_string(err));
+      }
+      if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
+        s->disconnect_client(*c);
+      }
     }
-  }
-
-  void on_listen_accept(
-      struct evconnlistener*, evutil_socket_t fd, struct sockaddr*, int) {
-    BufferEvent bev(this->base, fd, BEV_OPT_CLOSE_ON_FREE);
-    bufferevent* bev_ptr = bev.get();
-    auto emplace_ret = this->bev_to_client.emplace(bev_ptr, std::move(bev));
-    this->on_client_connect(emplace_ret.first->second);
-  }
-
-  void on_listen_error(struct evconnlistener* listener) {
-    int err = EVUTIL_SOCKET_ERROR();
-    log_error("[StreamServer] Failure on listening socket %d: %d (%s)",
-        evconnlistener_get_fd(listener),
-        err,
-        evutil_socket_error_to_string(err));
   }
 
   virtual void on_client_input(Client& c) = 0;
-
-  void on_client_error(Client& c, short events) {
-    if (events & BEV_EVENT_ERROR) {
-      int err = EVUTIL_SOCKET_ERROR();
-      log_warning("[StreamServer] Client caused error %d (%s)",
-          err, evutil_socket_error_to_string(err));
-    }
-    if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
-      this->disconnect_client(c);
-    }
-  }
-
   virtual void on_client_connect(Client&) { }
-
   virtual void on_client_disconnect(Client&) { }
 };
