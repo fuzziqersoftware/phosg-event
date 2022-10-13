@@ -79,15 +79,18 @@ struct EvBuffer {
   void copyout_from(const struct evbuffer_ptr* pos, void* data, size_t size);
   std::string copyout_from(const struct evbuffer_ptr* pos, size_t size);
 
-  template <typename T> void add(const T& t) {
+  template <typename T, std::enable_if_t<std::is_pod_v<T>, bool> = true>
+  void add(const T& t) {
     this->add(&t, sizeof(T));
   }
-  template <typename T> T remove() {
+  template <typename T, std::enable_if_t<std::is_pod_v<T>, bool> = true>
+  T remove() {
     T ret;
     this->remove(&ret, sizeof(T));
     return ret;
   }
-  template <typename T> T copyout() {
+  template <typename T, std::enable_if_t<std::is_pod_v<T>, bool> = true>
+  T copyout() {
     T ret;
     this->copyout(&ret, sizeof(T));
     return ret;
