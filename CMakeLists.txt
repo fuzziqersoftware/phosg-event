@@ -45,6 +45,7 @@ add_library(phosg-event
     src/EvHTTPRequest.cc
     src/HTTPServer.cc
     src/Listener.cc
+    src/SSL.cc
 )
 target_include_directories(phosg-event PUBLIC ${LIBEVENT_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(phosg-event phosg pthread ${LIBEVENT_LIBRARIES} ${OPENSSL_LIBRARIES})

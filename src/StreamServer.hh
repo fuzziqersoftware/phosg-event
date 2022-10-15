@@ -85,6 +85,7 @@ protected:
   };
 
   EventBase base;
+  std::shared_ptr<SSL_CTX> ssl_ctx;
   std::vector<Listener> listeners;
   std::unordered_map<struct bufferevent*, Client> bev_to_client;
   PrefixedLogger log;
@@ -104,7 +105,7 @@ protected:
       int,
       void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    BufferEvent bev(s->base, fd, BEV_OPT_CLOSE_ON_FREE);
+    BufferEvent bev(s->base, fd, BEV_OPT_CLOSE_ON_FREE, s->ssl_ctx.get());
     bufferevent* bev_ptr = bev.get();
     auto emplace_ret = s->bev_to_client.emplace(std::piecewise_construct,
         std::forward_as_tuple(bev_ptr),

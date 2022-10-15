@@ -20,7 +20,7 @@
 
 class HTTPServer {
 public:
-  HTTPServer(EventBase& base, SSL_CTX* ssl_ctx);
+  HTTPServer(EventBase& base, std::shared_ptr<SSL_CTX> ssl_ctx = nullptr);
   HTTPServer(const HTTPServer&) = delete;
   HTTPServer(HTTPServer&&) = delete;
   HTTPServer& operator=(const HTTPServer&) = delete;
@@ -34,7 +34,7 @@ public:
 protected:
   EventBase base;
   struct evhttp* http;
-  SSL_CTX* ssl_ctx;
+  std::shared_ptr<SSL_CTX> ssl_ctx;
   std::string server_name;
 
   static struct bufferevent* dispatch_on_ssl_connection(struct event_base* base,

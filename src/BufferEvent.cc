@@ -17,14 +17,15 @@ BufferEvent::BufferEvent(EventBase& base, evutil_socket_t fd,
     try {
       this->bev = bufferevent_openssl_socket_new(
           base.get(),
-          -1,
+          fd,
           ssl,
           BUFFEREVENT_SSL_ACCEPTING,
-          BEV_OPT_CLOSE_ON_FREE);
+          BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
     } catch (const exception&) {
       SSL_free(ssl);
       throw;
     }
+    bufferevent_openssl_set_allow_dirty_shutdown(this->bev, true);
   } else {
     this->bev = bufferevent_socket_new(base.get(), fd, options);
   }

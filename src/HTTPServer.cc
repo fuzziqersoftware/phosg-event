@@ -90,7 +90,7 @@ const unordered_map<int, const char*> HTTPServer::explanation_for_response_code(
 
 
 
-HTTPServer::HTTPServer(EventBase& base, SSL_CTX* ssl_ctx)
+HTTPServer::HTTPServer(EventBase& base, shared_ptr<SSL_CTX> ssl_ctx)
   : base(base), http(nullptr), ssl_ctx(ssl_ctx) { }
 
 HTTPServer::~HTTPServer() {
@@ -106,7 +106,7 @@ void HTTPServer::add_socket(int fd) {
       evhttp_set_bevcb(
           this->http,
           this->dispatch_on_ssl_connection,
-          this->ssl_ctx);
+          this->ssl_ctx.get());
     }
     evhttp_set_gencb(this->http, this->dispatch_handle_request, this);
   }
