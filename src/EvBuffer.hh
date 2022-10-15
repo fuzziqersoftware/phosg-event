@@ -2,6 +2,7 @@
 
 #include <event2/buffer.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <phosg/Encoding.hh>
