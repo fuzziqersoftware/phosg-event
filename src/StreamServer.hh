@@ -62,9 +62,24 @@ public:
     this->listeners.emplace_back(listener).set_owned(true);
   }
 
+  inline bool is_ssl() const {
+    return this->ssl_ctx != nullptr;
+  }
+
+  inline bool socket_count() const {
+    return this->listeners.size();
+  }
+
+  inline size_t client_count() const {
+    return this->bev_to_client.size();
+  }
+
 protected:
-  explicit StreamServer(EventBase& base, const char* log_prefix = "[StreamServer] ")
-    : base(base), log(log_prefix) { }
+  explicit StreamServer(
+      EventBase& base,
+      std::shared_ptr<SSL_CTX> ssl_ctx = nullptr,
+      const char* log_prefix = "[StreamServer] ")
+    : base(base), ssl_ctx(ssl_ctx), log(log_prefix) { }
 
   struct Client {
     BufferEvent bev;
