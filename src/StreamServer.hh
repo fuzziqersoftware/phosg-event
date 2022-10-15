@@ -138,7 +138,7 @@ protected:
       struct evconnlistener* listener, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
     int err = EVUTIL_SOCKET_ERROR();
-    s->log.error("[StreamServer] Failure on listening socket %d: %d (%s)",
+    s->log.error("Failure on listening socket %d: %d (%s)",
         evconnlistener_get_fd(listener),
         err,
         evutil_socket_error_to_string(err));
@@ -175,7 +175,7 @@ protected:
     if (c) {
       if (events & BEV_EVENT_ERROR) {
         int err = EVUTIL_SOCKET_ERROR();
-        s->log.warning("[StreamServer] Client caused error %d (%s)",
+        s->log.warning("Client caused error %d (%s)",
             err, evutil_socket_error_to_string(err));
       }
       if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
