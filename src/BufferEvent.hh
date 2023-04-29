@@ -1,17 +1,15 @@
 #pragma once
 
-#include <event2/event.h>
 #include <event2/bufferevent.h>
+#include <event2/event.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
 #include <memory>
 
-#include "EventBase.hh"
-#include "EvDNSBase.hh"
 #include "EvBuffer.hh"
-
-
+#include "EvDNSBase.hh"
+#include "EventBase.hh"
 
 // TODO: implement SSL and other advanced functions
 

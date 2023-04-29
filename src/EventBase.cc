@@ -6,28 +6,31 @@
 
 using namespace std;
 
-
-
 EventBase::EventBase()
-  : base(event_base_new()), owned(true) {
+    : base(event_base_new()),
+      owned(true) {
   if (!this->base) {
     throw runtime_error("event_base_new");
   }
 }
 
 EventBase::EventBase(EventConfig& config)
-  : base(event_base_new_with_config(config.get())), owned(true) {
+    : base(event_base_new_with_config(config.get())),
+      owned(true) {
   if (!this->base) {
     throw runtime_error("event_base_new_with_config");
   }
 }
 
-EventBase::EventBase(struct event_base* base) : base(base), owned(false) { }
+EventBase::EventBase(struct event_base* base) : base(base),
+                                                owned(false) {}
 
 EventBase::EventBase(const EventBase& other)
-  : base(other.base), owned(false) { }
+    : base(other.base),
+      owned(false) {}
 
-EventBase::EventBase(EventBase&& other) : base(other.base), owned(other.owned) {
+EventBase::EventBase(EventBase&& other) : base(other.base),
+                                          owned(other.owned) {
   other.owned = false;
 }
 
@@ -119,7 +122,7 @@ void EventBase::once(
   // TODO: can we do this without an extra allocation?
   auto fn = new function<void(evutil_socket_t, short)>(cb);
   if (event_base_once(this->base, fd, what, &EventBase::dispatch_once_cb, fn,
-      timeout)) {
+          timeout)) {
     delete fn;
     throw runtime_error("event_base_once");
   }
@@ -153,6 +156,32 @@ void EventBase::once(
     uint64_t timeout_usecs) {
   auto tv = usecs_to_timeval(timeout_usecs);
   this->once(fd, what, cb, cbarg, &tv);
+}
+
+void EventBase::once(
+    function<void(evutil_socket_t, short)> cb,
+    const struct timeval* timeout) {
+  this->once(-1, EV_TIMEOUT, cb, timeout);
+}
+
+void EventBase::once(
+    function<void(evutil_socket_t, short)> cb,
+    uint64_t timeout_usecs) {
+  this->once(-1, EV_TIMEOUT, cb, timeout_usecs);
+}
+
+void EventBase::once(
+    void (*cb)(evutil_socket_t, short, void*),
+    void* cbarg,
+    const struct timeval* timeout) {
+  this->once(-1, EV_TIMEOUT, cb, cbarg, timeout);
+}
+
+void EventBase::once(
+    void (*cb)(evutil_socket_t, short, void*),
+    void* cbarg,
+    uint64_t timeout_usecs) {
+  this->once(-1, EV_TIMEOUT, cb, cbarg, timeout_usecs);
 }
 
 Event EventBase::get_running_event() {

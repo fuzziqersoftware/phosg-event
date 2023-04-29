@@ -7,8 +7,6 @@
 
 #include "EventBase.hh"
 
-
-
 class Listener {
 public:
   Listener(EventBase& base, unsigned flags, int backlog,

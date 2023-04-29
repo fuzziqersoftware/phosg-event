@@ -10,6 +10,39 @@
 
 
 struct EvBuffer {
+  class insufficient_data : public std::runtime_error {
+  public:
+    insufficient_data() : runtime_error("insufficient data") { }
+    ~insufficient_data();
+  };
+
+  class BoundedReader {
+  public:
+    BoundedReader(EvBuffer* buf, size_t remaining);
+    ~BoundedReader() = default;
+
+    inline size_t remaining() const {
+      return this->bytes_remaining;
+    }
+
+    void skip(size_t size);
+
+    template <typename T>
+    T get() {
+      this->skip(sizeof(T));
+      return this->buf->remove<T>();
+    }
+
+    void read(void* data, size_t size);
+    std::string read(size_t size);
+
+  private:
+    void consume(size_t bytes);
+
+    EvBuffer* buf;
+    size_t bytes_remaining;
+  };
+
   class LockGuard {
   public:
     LockGuard(EvBuffer* buf);
@@ -33,6 +66,10 @@ struct EvBuffer {
   void set_owned(bool owned);
   struct evbuffer* get();
   const struct evbuffer* get() const;
+
+  inline BoundedReader bounded_reader(size_t remaining) {
+    return BoundedReader(this, remaining);
+  }
 
   void enable_locking(void* lock = nullptr);
   void lock();

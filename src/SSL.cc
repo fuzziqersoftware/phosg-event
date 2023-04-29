@@ -5,8 +5,6 @@
 
 using namespace std;
 
-
-
 void openssl_global_init() {
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
@@ -36,13 +34,13 @@ SSL_CTX* openssl_create_default_context(
   return ctx;
 }
 
-unique_ptr<SSL_CTX, void(*)(SSL_CTX*)> openssl_create_default_context_unique(
+unique_ptr<SSL_CTX, void (*)(SSL_CTX*)> openssl_create_default_context_unique(
     const string& key_filename,
     const string& cert_filename,
     const string& ca_cert_filename) {
   auto* ctx = openssl_create_default_context(
       key_filename, cert_filename, ca_cert_filename);
-  return unique_ptr<SSL_CTX, void(*)(SSL_CTX*)>(ctx, SSL_CTX_free);
+  return unique_ptr<SSL_CTX, void (*)(SSL_CTX*)>(ctx, SSL_CTX_free);
 }
 
 shared_ptr<SSL_CTX> openssl_create_default_context_shared(

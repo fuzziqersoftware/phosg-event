@@ -4,19 +4,21 @@
 
 using namespace std;
 
-
-
 EvHTTPRequest::EvHTTPRequest()
-  : req(evhttp_request_new(&EvHTTPRequest::dispatch_on_response, this)), owned(true) { }
+    : req(evhttp_request_new(&EvHTTPRequest::dispatch_on_response, this)),
+      owned(true) {}
 
 EvHTTPRequest::EvHTTPRequest(struct evhttp_request* req)
-  : req(req), owned(false) { }
+    : req(req),
+      owned(false) {}
 
 EvHTTPRequest::EvHTTPRequest(const EvHTTPRequest& other)
-  : req(other.req), owned(false) { }
+    : req(other.req),
+      owned(false) {}
 
 EvHTTPRequest::EvHTTPRequest(EvHTTPRequest&& other)
-  : req(other.req), owned(other.owned) {
+    : req(other.req),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -57,7 +59,7 @@ unordered_multimap<string, string> EvHTTPRequest::parse_url_params(const char* q
           value[write_offset] =
               static_cast<char>(value_for_hex_char(value[read_offset + 1]) << 4) |
               static_cast<char>(value_for_hex_char(value[read_offset + 2]));
-              read_offset += 3;
+          read_offset += 3;
         } else if (value[write_offset] == '+') {
           value[write_offset] = ' ';
           read_offset++;
@@ -144,7 +146,7 @@ void EvHTTPRequest::own() {
   return evhttp_request_own(this->req);
 }
 
-void EvHTTPRequest::set_chunked_cb(void(*cb)(struct evhttp_request *, void *)) {
+void EvHTTPRequest::set_chunked_cb(void (*cb)(struct evhttp_request*, void*)) {
   return evhttp_request_set_chunked_cb(this->req, cb);
 }
 

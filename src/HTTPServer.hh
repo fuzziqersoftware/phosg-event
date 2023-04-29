@@ -1,8 +1,8 @@
 #define _STDC_FORMAT_MACROS
 
-#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent_ssl.h>
+#include <event2/event.h>
 #include <event2/http.h>
 #include <inttypes.h>
 #include <openssl/err.h>
@@ -12,11 +12,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "EventBase.hh"
 #include "EvBuffer.hh"
 #include "EvHTTPRequest.hh"
-
-
+#include "EventBase.hh"
 
 class HTTPServer {
 public:

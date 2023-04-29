@@ -1,14 +1,12 @@
 #pragma once
 
-#include <event2/event.h>
 #include <event2/dns.h>
+#include <event2/event.h>
 
 #include <functional>
 #include <memory>
 
 #include "EventBase.hh"
-
-
 
 // TODO: support evdns_server functions
 
@@ -36,7 +34,7 @@ public:
   void resume();
 
   void search_clear();
-  void search_add(const char *domain);
+  void search_add(const char* domain);
   void search_ndots_set(int ndots);
 
   void set_option(const char* option, const char* val);

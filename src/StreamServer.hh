@@ -1,6 +1,5 @@
 #pragma once
 
-#include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
 #include <event2/listener.h>
@@ -16,13 +15,11 @@
 #include <vector>
 
 #include "BufferEvent.hh"
-#include "EventBase.hh"
 #include "Event.hh"
+#include "EventBase.hh"
 #include "Listener.hh"
 
-
-
-struct StreamClientStateBase { };
+struct StreamClientStateBase {};
 
 template <typename ClientStateT = StreamClientStateBase>
 class StreamServer {
@@ -79,7 +76,9 @@ protected:
       EventBase& base,
       std::shared_ptr<SSL_CTX> ssl_ctx = nullptr,
       const char* log_prefix = "[StreamServer] ")
-    : base(base), ssl_ctx(ssl_ctx), log(log_prefix) { }
+      : base(base),
+        ssl_ctx(ssl_ctx),
+        log(log_prefix) {}
 
   struct Client {
     BufferEvent bev;
@@ -185,6 +184,6 @@ protected:
   }
 
   virtual void on_client_input(Client& c) = 0;
-  virtual void on_client_connect(Client&) { }
-  virtual void on_client_disconnect(Client&) { }
+  virtual void on_client_connect(Client&) {}
+  virtual void on_client_disconnect(Client&) {}
 };

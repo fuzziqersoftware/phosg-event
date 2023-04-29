@@ -3,12 +3,10 @@
 #include <event2/event.h>
 #include <event2/http.h>
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 #include "EvBuffer.hh"
-
-
 
 class EvHTTPRequest {
 public:
@@ -43,7 +41,7 @@ public:
   int is_owned();
 
   void own();
-  void set_chunked_cb(void(*cb)(struct evhttp_request *, void *));
+  void set_chunked_cb(void (*cb)(struct evhttp_request*, void*));
 
   struct evhttp_request* get();
 

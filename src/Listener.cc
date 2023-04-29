@@ -4,11 +4,10 @@
 
 using namespace std;
 
-
-
 Listener::Listener(EventBase& base, unsigned flags, int backlog,
     evutil_socket_t fd)
-  : lev(evconnlistener_new(base.get(), &Listener::dispatch_on_accept, this, flags, backlog, fd)), owned(true) {
+    : lev(evconnlistener_new(base.get(), &Listener::dispatch_on_accept, this, flags, backlog, fd)),
+      owned(true) {
   if (!this->lev) {
     throw runtime_error("evconnlistener_new");
   }
@@ -16,17 +15,24 @@ Listener::Listener(EventBase& base, unsigned flags, int backlog,
 
 Listener::Listener(EventBase& base, unsigned flags, int backlog,
     const struct sockaddr* sa, int socklen)
-  : lev(evconnlistener_new_bind(base.get(), &Listener::dispatch_on_accept, this, flags, backlog, sa, socklen)), owned(true) {
+    : lev(evconnlistener_new_bind(base.get(), &Listener::dispatch_on_accept, this, flags, backlog, sa, socklen)),
+      owned(true) {
   if (!this->lev) {
     throw runtime_error("evconnlistener_new_bind");
   }
 }
 
-Listener::Listener(struct evconnlistener* lev) : lev(lev), owned(false) { }
+Listener::Listener(struct evconnlistener* lev)
+    : lev(lev),
+      owned(false) {}
 
-Listener::Listener(const Listener& other) : lev(other.lev), owned(false) { }
+Listener::Listener(const Listener& other)
+    : lev(other.lev),
+      owned(false) {}
 
-Listener::Listener(Listener&& other) : lev(other.lev), owned(other.owned) {
+Listener::Listener(Listener&& other)
+    : lev(other.lev),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -78,7 +84,7 @@ struct event_base* Listener::get_base_raw() const {
 }
 
 void Listener::dispatch_on_accept(struct evconnlistener*, evutil_socket_t fd,
-      struct sockaddr* addr, int len, void* ctx) {
+    struct sockaddr* addr, int len, void* ctx) {
   reinterpret_cast<Listener*>(ctx)->on_accept(fd, addr, len);
 }
 

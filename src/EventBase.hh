@@ -7,8 +7,6 @@
 
 #include "EventConfig.hh"
 
-
-
 class Event;
 
 class EventBase {
@@ -50,6 +48,21 @@ public:
   void once(
       evutil_socket_t fd,
       short what,
+      void (*cb)(evutil_socket_t, short, void*),
+      void* cbarg,
+      uint64_t timeout_usecs);
+
+  void once(
+      std::function<void(evutil_socket_t, short)> cb,
+      const struct timeval* timeout);
+  void once(
+      std::function<void(evutil_socket_t, short)> cb,
+      uint64_t timeout_usecs);
+  void once(
+      void (*cb)(evutil_socket_t, short, void*),
+      void* cbarg,
+      const struct timeval* timeout);
+  void once(
       void (*cb)(evutil_socket_t, short, void*),
       void* cbarg,
       uint64_t timeout_usecs);

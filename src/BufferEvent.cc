@@ -6,11 +6,10 @@
 
 using namespace std;
 
-
-
 BufferEvent::BufferEvent(EventBase& base, evutil_socket_t fd,
     enum bufferevent_options options, SSL_CTX* ssl_ctx)
-  : bev(nullptr), owned(true) {
+    : bev(nullptr),
+      owned(true) {
 
   if (ssl_ctx) {
     SSL* ssl = SSL_new(ssl_ctx);
@@ -42,13 +41,16 @@ BufferEvent::BufferEvent(EventBase& base, evutil_socket_t fd,
       this);
 }
 
-BufferEvent::BufferEvent(struct bufferevent* bev) : bev(bev), owned(false) { }
+BufferEvent::BufferEvent(struct bufferevent* bev) : bev(bev),
+                                                    owned(false) {}
 
 BufferEvent::BufferEvent(const BufferEvent& other)
-  : bev(other.bev), owned(false) { }
+    : bev(other.bev),
+      owned(false) {}
 
 BufferEvent::BufferEvent(BufferEvent&& other)
-  : bev(other.bev), owned(other.owned) {
+    : bev(other.bev),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -81,7 +83,7 @@ void BufferEvent::socket_connect(struct sockaddr* addr, int addrlen) {
 void BufferEvent::socket_connect_hostname(EvDNSBase* dns_base, int family,
     const char* hostname, int port) {
   if (bufferevent_socket_connect_hostname(
-      this->bev, dns_base ? dns_base->get() : nullptr, family, hostname, port)) {
+          this->bev, dns_base ? dns_base->get() : nullptr, family, hostname, port)) {
     throw runtime_error("bufferevent_socket_connect_hostname");
   }
 }

@@ -1,11 +1,9 @@
-#include <phosg/Network.hh>
-#include <phosg-event/EventBase.hh>
-#include <phosg-event/CoroutineStreamServer.hh>
 #include <phosg-event/AwaitableBufferEvent.hh>
+#include <phosg-event/CoroutineStreamServer.hh>
+#include <phosg-event/EventBase.hh>
+#include <phosg/Network.hh>
 
 using namespace std;
-
-
 
 class EchoServer : public CoroutineStreamServer {
 public:
@@ -19,8 +17,6 @@ public:
     }
   }
 };
-
-
 
 int main(int argc, char** argv) {
   int port = (argc > 1) ? atoi(argv[1]) : 5050;

@@ -2,22 +2,23 @@
 
 using namespace std;
 
-
-
 EvDNSBase::EvDNSBase(EventBase& base, int initialize, int fail_requests_on_destroy)
-  : base(evdns_base_new(base.get(), initialize)),
-    owned(true),
-    fail_requests_on_destroy(fail_requests_on_destroy) { }
+    : base(evdns_base_new(base.get(), initialize)),
+      owned(true),
+      fail_requests_on_destroy(fail_requests_on_destroy) {}
 
 EvDNSBase::EvDNSBase(struct evdns_base* base)
-  : base(base),
-    owned(false),
-    fail_requests_on_destroy(false) { }
+    : base(base),
+      owned(false),
+      fail_requests_on_destroy(false) {}
 
 EvDNSBase::EvDNSBase(const EvDNSBase& other)
-  : base(other.base), owned(false) { }
+    : base(other.base),
+      owned(false) {}
 
-EvDNSBase::EvDNSBase(EvDNSBase&& other) : base(other.base), owned(other.owned) {
+EvDNSBase::EvDNSBase(EvDNSBase&& other)
+    : base(other.base),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -89,7 +90,7 @@ void EvDNSBase::search_clear() {
   return evdns_base_search_clear(this->base);
 }
 
-void EvDNSBase::search_add(const char *domain) {
+void EvDNSBase::search_add(const char* domain) {
   return evdns_base_search_add(this->base, domain);
 }
 

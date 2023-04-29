@@ -7,6 +7,33 @@ using namespace std;
 
 
 
+EvBuffer::BoundedReader::BoundedReader(EvBuffer* buf, size_t size)
+  : buf(buf), bytes_remaining(size) { }
+
+void EvBuffer::BoundedReader::consume(size_t size) {
+  if (size < this->bytes_remaining) {
+    throw EvBuffer::insufficient_data();
+  }
+  this->bytes_remaining -= size;
+}
+
+void EvBuffer::BoundedReader::skip(size_t size) {
+  this->consume(size);
+  this->buf->drain(size);
+}
+
+void EvBuffer::BoundedReader::read(void* data, size_t size) {
+  this->consume(size);
+  this->buf->remove(data, size);
+}
+
+std::string EvBuffer::BoundedReader::read(size_t size) {
+  this->consume(size);
+  return this->buf->remove(size);
+}
+
+
+
 EvBuffer::LockGuard::LockGuard(EvBuffer* buf) : buf(buf) {
   this->buf->lock();
 }
@@ -165,7 +192,7 @@ void EvBuffer::remove_buffer(struct evbuffer* src, size_t size) {
     throw runtime_error("evbuffer_remove_buffer");
   }
   if (static_cast<size_t>(ret) != size) {
-    throw out_of_range("not enough data available");
+    throw insufficient_data();
   }
 }
 
@@ -227,7 +254,7 @@ void EvBuffer::remove(void* data, size_t size) {
   if (ret < 0) {
     throw runtime_error("evbuffer_remove");
   } else if (static_cast<size_t>(ret) < size) {
-    throw runtime_error("not enough data in buffer");
+    throw insufficient_data();
   }
 }
 
@@ -258,7 +285,7 @@ void EvBuffer::copyout(void* data, size_t size) {
   if (ret < 0) {
     throw runtime_error("evbuffer_copyout");
   } else if (static_cast<size_t>(ret) < size) {
-    throw out_of_range("not enough data in buffer");
+    throw insufficient_data();
   }
 }
 
@@ -289,7 +316,7 @@ void EvBuffer::copyout_from(const struct evbuffer_ptr* pos, void* data, size_t s
   if (ret < 0) {
     throw runtime_error("evbuffer_copyout_from");
   } else if (static_cast<size_t>(ret) < size) {
-    throw runtime_error("not enough data in buffer");
+    throw insufficient_data();
   }
 }
 
@@ -310,7 +337,7 @@ string EvBuffer::readln(enum evbuffer_eol_style eol_style) {
     free(ret);
     return str;
   } else {
-    throw runtime_error("end of stream");
+    throw insufficient_data();
   }
 }
 

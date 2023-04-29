@@ -1,6 +1,6 @@
-#include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent_ssl.h>
+#include <event2/event.h>
 #include <event2/http.h>
 #include <inttypes.h>
 #include <stdlib.h>
@@ -15,15 +15,13 @@
 #include "BufferEvent.hh"
 #include "HTTPServer.hh"
 
-
-
-struct HTTPWebsocketClientStateBase { };
+struct HTTPWebsocketClientStateBase {};
 
 template <typename ClientStateT = HTTPWebsocketClientStateBase>
 class HTTPWebsocketServer : public HTTPServer {
 public:
   HTTPWebsocketServer(EventBase& base, SSL_CTX* ssl_ctx)
-    : HTTPServer(base, ssl_ctx) { }
+      : HTTPServer(base, ssl_ctx) {}
 
   HTTPWebsocketServer(const HTTPWebsocketServer&) = delete;
   HTTPWebsocketServer(HTTPWebsocketServer&&) = delete;
@@ -33,7 +31,7 @@ public:
 
 protected:
   struct WebsocketClient {
-    std::unique_ptr<struct evhttp_connection, void(*)(struct evhttp_connection*)> conn;
+    std::unique_ptr<struct evhttp_connection, void (*)(struct evhttp_connection*)> conn;
     BufferEvent bev;
 
     uint8_t pending_opcode;
@@ -42,9 +40,9 @@ protected:
     ClientStateT state;
 
     WebsocketClient(struct evhttp_connection* conn)
-      : conn(conn, evhttp_connection_free),
-        bev(evhttp_connection_get_bufferevent(this->conn.get())),
-        pending_opcode(0xFF) { }
+        : conn(conn, evhttp_connection_free),
+          bev(evhttp_connection_get_bufferevent(this->conn.get())),
+          pending_opcode(0xFF) {}
     ~WebsocketClient() = default;
 
     void reset_pending_frame() {
@@ -54,8 +52,6 @@ protected:
   };
 
   std::unordered_map<struct bufferevent*, std::shared_ptr<WebsocketClient>> bev_to_websocket_client;
-
-
 
   // Converts an HTTP request to a Websocket connection. If successful,
   // handle_websocket_connect is called, and this function returns a
@@ -106,12 +102,11 @@ protected:
   Upgrade: websocket\r\n\
   Connection: upgrade\r\n\
   Sec-WebSocket-Accept: %s\r\n\
-  \r\n", sec_websocket_accept.c_str());
+  \r\n",
+        sec_websocket_accept.c_str());
 
     return this->bev_to_websocket_client.emplace(bev, new WebsocketClient(conn)).first->second;
   }
-
-
 
   static void dispatch_on_websocket_read(struct bufferevent* bev, void* ctx) {
     reinterpret_cast<HTTPWebsocketServer*>(ctx)->on_websocket_read(bev);
@@ -215,7 +210,7 @@ protected:
     if (header_data[0] & 0x80) {
       this->handle_websocket_message(c, c->pending_opcode, c->pending_data);
       c->reset_pending_frame();
-    } 
+    }
 
     // If the FIN bit isn't set, we're done for now; we need to receive at least
     // one continuation frame to complete the message
@@ -227,15 +222,11 @@ protected:
     }
   }
 
-
-
   void disconnect_websocket_client(struct bufferevent* bev) {
     auto it = this->bev_to_websocket_client.find(bev);
     this->handle_websocket_disconnect(it->second);
     this->bev_to_websocket_client.erase(it);
   }
-
-
 
   static void send_websocket_message(
       EvBuffer& buf, std::string&& message, uint8_t opcode = 0x01) {
@@ -275,8 +266,6 @@ protected:
     HTTPWebsocketServer::send_websocket_message(
         c->bev.get(), move(message), opcode);
   }
-
-
 
   virtual void handle_request(EvHTTPRequest& req) = 0;
   virtual void handle_websocket_message(std::shared_ptr<WebsocketClient> c,

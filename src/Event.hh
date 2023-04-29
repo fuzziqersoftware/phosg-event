@@ -6,8 +6,6 @@
 
 #include "EventBase.hh"
 
-
-
 // TODO: should we support unallocated event structs (e.g. via event_assign)?
 
 class Event {
