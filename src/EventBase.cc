@@ -114,6 +114,12 @@ void EventBase::dispatch_once_cb(evutil_socket_t fd, short what, void* ctx) {
   delete fn;
 }
 
+void EventBase::dispatch_once_timeout_cb(evutil_socket_t, short, void* ctx) {
+  auto* fn = reinterpret_cast<function<void()>*>(ctx);
+  (*fn)();
+  delete fn;
+}
+
 void EventBase::once(
     evutil_socket_t fd,
     short what,
@@ -159,29 +165,21 @@ void EventBase::once(
 }
 
 void EventBase::once(
-    function<void(evutil_socket_t, short)> cb,
-    const struct timeval* timeout) {
-  this->once(-1, EV_TIMEOUT, cb, timeout);
-}
-
-void EventBase::once(
-    function<void(evutil_socket_t, short)> cb,
+    function<void()> cb,
     uint64_t timeout_usecs) {
-  this->once(-1, EV_TIMEOUT, cb, timeout_usecs);
+  auto tv = usecs_to_timeval(timeout_usecs);
+  this->once(cb, &tv);
 }
 
 void EventBase::once(
-    void (*cb)(evutil_socket_t, short, void*),
-    void* cbarg,
+    function<void()> cb,
     const struct timeval* timeout) {
-  this->once(-1, EV_TIMEOUT, cb, cbarg, timeout);
-}
-
-void EventBase::once(
-    void (*cb)(evutil_socket_t, short, void*),
-    void* cbarg,
-    uint64_t timeout_usecs) {
-  this->once(-1, EV_TIMEOUT, cb, cbarg, timeout_usecs);
+  // TODO: can we do this without an extra allocation?
+  auto fn = new function<void()>(cb);
+  if (event_base_once(this->base, -1, EV_TIMEOUT, &EventBase::dispatch_once_timeout_cb, fn, timeout)) {
+    delete fn;
+    throw runtime_error("event_base_once");
+  }
 }
 
 Event EventBase::get_running_event() {

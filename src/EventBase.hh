@@ -52,20 +52,8 @@ public:
       void* cbarg,
       uint64_t timeout_usecs);
 
-  void once(
-      std::function<void(evutil_socket_t, short)> cb,
-      const struct timeval* timeout);
-  void once(
-      std::function<void(evutil_socket_t, short)> cb,
-      uint64_t timeout_usecs);
-  void once(
-      void (*cb)(evutil_socket_t, short, void*),
-      void* cbarg,
-      const struct timeval* timeout);
-  void once(
-      void (*cb)(evutil_socket_t, short, void*),
-      void* cbarg,
-      uint64_t timeout_usecs);
+  void once(std::function<void()> cb, const struct timeval* timeout);
+  void once(std::function<void()> cb, uint64_t timeout_usecs = 0);
 
   Event get_running_event();
   struct event* get_running_event_raw();
@@ -93,6 +81,7 @@ public:
 
 protected:
   static void dispatch_once_cb(evutil_socket_t fd, short what, void* ctx);
+  static void dispatch_once_timeout_cb(evutil_socket_t fd, short what, void* ctx);
   static int dispatch_foreach_event_raw_cb(const struct event_base* base,
       const struct event* event, void* ctx);
 
