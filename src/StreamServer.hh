@@ -31,19 +31,26 @@ public:
   StreamServer& operator=(StreamServer&&) = delete;
   virtual ~StreamServer() = default;
 
-  void listen(const std::string& socket_path) {
-    this->add_socket(::listen(socket_path, 0, SOMAXCONN));
+  int listen(const std::string& socket_path) {
+    int fd = ::listen(socket_path, 0, SOMAXCONN);
+    this->add_socket(fd);
+    return fd;
   }
 
-  void listen(const std::string& addr, int port) {
-    this->add_socket(::listen(addr, port, SOMAXCONN));
+  int listen(const std::string& addr, int port) {
+    int fd = ::listen(addr, port, SOMAXCONN);
+    this->add_socket(fd);
+    return fd;
   }
 
-  void listen(int port) {
-    this->listen("", port);
+  int listen(int port) {
+    return this->listen("", port);
   }
 
   void add_socket(int fd) {
+    if (this->listeners.count(fd)) {
+      return;
+    }
     struct evconnlistener* listener = evconnlistener_new(
         this->base.get(),
         StreamServer::dispatch_on_listen_accept,
@@ -56,7 +63,24 @@ public:
     }
     evconnlistener_set_error_cb(
         listener, StreamServer::dispatch_on_listen_error);
-    this->listeners.emplace_back(listener).set_owned(true);
+    auto& l = this->listeners.emplace(fd, listener).first->second;
+    l.set_owned(true);
+  }
+
+  void remove_socket(int fd) {
+    this->listeners.erase(fd);
+  }
+
+  std::unordered_set<int> all_sockets() const {
+    std::unordered_set<int> ret;
+    for (const auto& it : this->listeners) {
+      ret.emplace(it.first);
+    }
+    return ret;
+  }
+
+  inline void set_ssl_ctx(std::shared_ptr<SSL_CTX> new_ssl_ctx) {
+    this->ssl_ctx = new_ssl_ctx;
   }
 
   inline bool is_ssl() const {
@@ -101,7 +125,7 @@ protected:
 
   EventBase base;
   std::shared_ptr<SSL_CTX> ssl_ctx;
-  std::vector<Listener> listeners;
+  std::unordered_map<int, Listener> listeners;
   std::unordered_map<struct bufferevent*, Client> bev_to_client;
   PrefixedLogger log;
 
