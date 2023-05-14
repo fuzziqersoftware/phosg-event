@@ -8,6 +8,7 @@
 #include "EventConfig.hh"
 
 class Event;
+class CallbackEvent;
 
 class EventBase {
 public:
@@ -54,6 +55,9 @@ public:
 
   void once(std::function<void()> cb, const struct timeval* timeout);
   void once(std::function<void()> cb, uint64_t timeout_usecs = 0);
+
+  CallbackEvent call_next(std::function<void()> cb);
+  CallbackEvent call_later(std::function<void()> cb, uint64_t usecs);
 
   Event get_running_event();
   struct event* get_running_event_raw();

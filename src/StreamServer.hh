@@ -126,10 +126,10 @@ protected:
   EventBase base;
   std::shared_ptr<SSL_CTX> ssl_ctx;
   std::unordered_map<int, Listener> listeners;
-  std::unordered_map<struct bufferevent*, Client> bev_to_client;
+  std::unordered_map<struct bufferevent*, std::shared_ptr<Client>> bev_to_client;
   PrefixedLogger log;
 
-  void disconnect_client(Client& c) {
+  void disconnect_client(std::shared_ptr<Client> c) {
     auto it = this->bev_to_client.find(c.bev.get());
     if (it != this->bev_to_client.end()) {
       this->on_client_disconnect(c);
@@ -170,7 +170,7 @@ protected:
   static void dispatch_on_client_input(
       struct bufferevent* bev, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    Client* c = nullptr;
+    std::shared_ptr<Client> c;
     try {
       c = &s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
@@ -189,7 +189,7 @@ protected:
   static void dispatch_on_client_error(
       struct bufferevent* bev, short events, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    Client* c = nullptr;
+    std::shared_ptr<Client> c;
     try {
       c = &s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
@@ -207,7 +207,7 @@ protected:
     }
   }
 
-  virtual void on_client_input(Client& c) = 0;
-  virtual void on_client_connect(Client&) {}
-  virtual void on_client_disconnect(Client&) {}
+  virtual void on_client_input(std::shared_ptr<Client>) = 0;
+  virtual void on_client_connect(std::shared_ptr<Client>) {}
+  virtual void on_client_disconnect(std::shared_ptr<Client>) {}
 };

@@ -4,16 +4,14 @@
 
 #include <functional>
 #include <memory>
-#include <string>
 #include <phosg/Encoding.hh>
-
-
+#include <string>
 
 struct EvBuffer {
   class insufficient_data : public std::runtime_error {
   public:
-    insufficient_data() : runtime_error("insufficient data") { }
-    ~insufficient_data();
+    insufficient_data() : runtime_error("insufficient data") {}
+    ~insufficient_data() = default;
   };
 
   class BoundedReader {
@@ -51,6 +49,7 @@ struct EvBuffer {
     LockGuard& operator=(const LockGuard&) = delete;
     LockGuard& operator=(LockGuard&& other);
     ~LockGuard();
+
   private:
     EvBuffer* buf;
   };
@@ -84,7 +83,7 @@ struct EvBuffer {
   void add(const std::string& data);
 
   size_t add_printf(const char* fmt, ...)
-  __attribute__((format(printf, 2, 3)));
+      __attribute__((format(printf, 2, 3)));
   size_t add_vprintf(const char* fmt, va_list va);
 
   void add_buffer(struct evbuffer* src);
@@ -134,57 +133,57 @@ struct EvBuffer {
     return ret;
   }
 
-  inline void add_u8(uint8_t v)    { this->add<uint8_t>(v); }
-  inline void add_s8(int8_t v)     { this->add<int8_t>(v); }
+  inline void add_u8(uint8_t v) { this->add<uint8_t>(v); }
+  inline void add_s8(int8_t v) { this->add<int8_t>(v); }
   inline void add_u16b(uint16_t v) { this->add<be_uint16_t>(v); }
-  inline void add_s16b(int16_t v)  { this->add<be_int16_t>(v); }
+  inline void add_s16b(int16_t v) { this->add<be_int16_t>(v); }
   inline void add_u16l(uint16_t v) { this->add<le_uint16_t>(v); }
-  inline void add_s16l(int16_t v)  { this->add<le_int16_t>(v); }
+  inline void add_s16l(int16_t v) { this->add<le_int16_t>(v); }
   inline void add_u32b(uint32_t v) { this->add<be_uint32_t>(v); }
-  inline void add_s32b(int32_t v)  { this->add<be_int32_t>(v); }
+  inline void add_s32b(int32_t v) { this->add<be_int32_t>(v); }
   inline void add_u32l(uint32_t v) { this->add<le_uint32_t>(v); }
-  inline void add_s32l(int32_t v)  { this->add<le_int32_t>(v); }
+  inline void add_s32l(int32_t v) { this->add<le_int32_t>(v); }
   inline void add_u64b(uint64_t v) { this->add<be_uint64_t>(v); }
-  inline void add_s64b(int64_t v)  { this->add<be_int64_t>(v); }
+  inline void add_s64b(int64_t v) { this->add<be_int64_t>(v); }
   inline void add_u64l(uint64_t v) { this->add<le_uint64_t>(v); }
-  inline void add_s64l(int64_t v)  { this->add<le_int64_t>(v); }
+  inline void add_s64l(int64_t v) { this->add<le_int64_t>(v); }
 
-  inline uint8_t remove_u8()    { return this->remove<uint8_t>(); }
-  inline int8_t remove_s8()     { return this->remove<int8_t>(); }
+  inline uint8_t remove_u8() { return this->remove<uint8_t>(); }
+  inline int8_t remove_s8() { return this->remove<int8_t>(); }
   inline uint16_t remove_u16b() { return this->remove<be_uint16_t>(); }
-  inline int16_t remove_s16b()  { return this->remove<be_int16_t>(); }
+  inline int16_t remove_s16b() { return this->remove<be_int16_t>(); }
   inline uint16_t remove_u16l() { return this->remove<le_uint16_t>(); }
-  inline int16_t remove_s16l()  { return this->remove<le_int16_t>(); }
+  inline int16_t remove_s16l() { return this->remove<le_int16_t>(); }
   inline uint32_t remove_u32b() { return this->remove<be_uint32_t>(); }
-  inline int32_t remove_s32b()  { return this->remove<be_int32_t>(); }
+  inline int32_t remove_s32b() { return this->remove<be_int32_t>(); }
   inline uint32_t remove_u32l() { return this->remove<le_uint32_t>(); }
-  inline int32_t remove_s32l()  { return this->remove<le_int32_t>(); }
+  inline int32_t remove_s32l() { return this->remove<le_int32_t>(); }
   inline uint64_t remove_u64b() { return this->remove<be_uint64_t>(); }
-  inline int64_t remove_s64b()  { return this->remove<be_int64_t>(); }
+  inline int64_t remove_s64b() { return this->remove<be_int64_t>(); }
   inline uint64_t remove_u64l() { return this->remove<le_uint64_t>(); }
-  inline int64_t remove_s64l()  { return this->remove<le_int64_t>(); }
+  inline int64_t remove_s64l() { return this->remove<le_int64_t>(); }
 
-  inline uint8_t copyout_u8()    { return this->copyout<uint8_t>(); }
-  inline int8_t copyout_s8()     { return this->copyout<int8_t>(); }
+  inline uint8_t copyout_u8() { return this->copyout<uint8_t>(); }
+  inline int8_t copyout_s8() { return this->copyout<int8_t>(); }
   inline uint16_t copyout_u16b() { return this->copyout<be_uint16_t>(); }
-  inline int16_t copyout_s16b()  { return this->copyout<be_int16_t>(); }
+  inline int16_t copyout_s16b() { return this->copyout<be_int16_t>(); }
   inline uint16_t copyout_u16l() { return this->copyout<le_uint16_t>(); }
-  inline int16_t copyout_s16l()  { return this->copyout<le_int16_t>(); }
+  inline int16_t copyout_s16l() { return this->copyout<le_int16_t>(); }
   inline uint32_t copyout_u32b() { return this->copyout<be_uint32_t>(); }
-  inline int32_t copyout_s32b()  { return this->copyout<be_int32_t>(); }
+  inline int32_t copyout_s32b() { return this->copyout<be_int32_t>(); }
   inline uint32_t copyout_u32l() { return this->copyout<le_uint32_t>(); }
-  inline int32_t copyout_s32l()  { return this->copyout<le_int32_t>(); }
+  inline int32_t copyout_s32l() { return this->copyout<le_int32_t>(); }
   inline uint64_t copyout_u64b() { return this->copyout<be_uint64_t>(); }
-  inline int64_t copyout_s64b()  { return this->copyout<be_int64_t>(); }
+  inline int64_t copyout_s64b() { return this->copyout<be_int64_t>(); }
   inline uint64_t copyout_u64l() { return this->copyout<le_uint64_t>(); }
-  inline int64_t copyout_s64l()  { return this->copyout<le_int64_t>(); }
+  inline int64_t copyout_s64l() { return this->copyout<le_int64_t>(); }
 
   std::string readln(enum evbuffer_eol_style eol_style);
 
   struct evbuffer_ptr search(const char* what, size_t size,
       const struct evbuffer_ptr* start);
   struct evbuffer_ptr search_range(const char* what, size_t size,
-      const struct evbuffer_ptr *start, const struct evbuffer_ptr *end);
+      const struct evbuffer_ptr* start, const struct evbuffer_ptr* end);
   struct evbuffer_ptr search_eol(struct evbuffer_ptr* start,
       size_t* bytes_found, enum evbuffer_eol_style eol_style);
   void ptr_set(struct evbuffer_ptr* pos, size_t position,

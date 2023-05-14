@@ -22,15 +22,17 @@ EventBase::EventBase(EventConfig& config)
   }
 }
 
-EventBase::EventBase(struct event_base* base) : base(base),
-                                                owned(false) {}
+EventBase::EventBase(struct event_base* base)
+    : base(base),
+      owned(false) {}
 
 EventBase::EventBase(const EventBase& other)
     : base(other.base),
       owned(false) {}
 
-EventBase::EventBase(EventBase&& other) : base(other.base),
-                                          owned(other.owned) {
+EventBase::EventBase(EventBase&& other)
+    : base(other.base),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -180,6 +182,14 @@ void EventBase::once(
     delete fn;
     throw runtime_error("event_base_once");
   }
+}
+
+CallbackEvent EventBase::call_next(std::function<void()> cb) {
+  return this->call_later(move(cb), 0);
+}
+
+CallbackEvent EventBase::call_later(std::function<void()> cb, uint64_t usecs) {
+  return CallbackEvent(*this, move(cb), usecs);
 }
 
 Event EventBase::get_running_event() {

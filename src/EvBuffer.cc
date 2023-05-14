@@ -5,10 +5,9 @@
 
 using namespace std;
 
-
-
 EvBuffer::BoundedReader::BoundedReader(EvBuffer* buf, size_t size)
-  : buf(buf), bytes_remaining(size) { }
+    : buf(buf),
+      bytes_remaining(size) {}
 
 void EvBuffer::BoundedReader::consume(size_t size) {
   if (size < this->bytes_remaining) {
@@ -32,8 +31,6 @@ std::string EvBuffer::BoundedReader::read(size_t size) {
   return this->buf->remove(size);
 }
 
-
-
 EvBuffer::LockGuard::LockGuard(EvBuffer* buf) : buf(buf) {
   this->buf->lock();
 }
@@ -54,15 +51,21 @@ EvBuffer::LockGuard::~LockGuard() {
   }
 }
 
+EvBuffer::EvBuffer()
+    : buf(evbuffer_new()),
+      owned(true) {}
 
+EvBuffer::EvBuffer(struct evbuffer* buf)
+    : buf(buf),
+      owned(false) {}
 
-EvBuffer::EvBuffer() : buf(evbuffer_new()), owned(true) { }
+EvBuffer::EvBuffer(const EvBuffer& other)
+    : buf(other.buf),
+      owned(false) {}
 
-EvBuffer::EvBuffer(struct evbuffer* buf) : buf(buf), owned(false) { }
-
-EvBuffer::EvBuffer(const EvBuffer& other) : buf(other.buf), owned(false) { }
-
-EvBuffer::EvBuffer(EvBuffer&& other) : buf(other.buf), owned(other.owned) {
+EvBuffer::EvBuffer(EvBuffer&& other)
+    : buf(other.buf),
+      owned(other.owned) {
   other.owned = false;
 }
 
@@ -346,7 +349,7 @@ struct evbuffer_ptr EvBuffer::search(const char* what, size_t size,
   return evbuffer_search(this->buf, what, size, start);
 }
 struct evbuffer_ptr EvBuffer::search_range(const char* what, size_t size,
-    const struct evbuffer_ptr *start, const struct evbuffer_ptr *end) {
+    const struct evbuffer_ptr* start, const struct evbuffer_ptr* end) {
   return evbuffer_search_range(this->buf, what, size, start, end);
 }
 struct evbuffer_ptr EvBuffer::search_eol(struct evbuffer_ptr* start,

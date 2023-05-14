@@ -4,6 +4,10 @@
 
 using namespace std;
 
+Event::Event()
+    : event(nullptr),
+      owned(false) {}
+
 Event::Event(EventBase& base, evutil_socket_t fd, short what)
     : event(event_new(base.get(), fd, what, &Event::dispatch_on_trigger, this)),
       owned(true) {
@@ -27,12 +31,18 @@ Event::Event(Event&& other)
 }
 
 Event& Event::operator=(const Event& other) {
+  if (this->owned && this->event) {
+    event_free(this->event);
+  }
   this->event = other.event;
   this->owned = false;
   return *this;
 }
 
 Event& Event::operator=(Event&& other) {
+  if (this->owned && this->event) {
+    event_free(this->event);
+  }
   this->event = other.event;
   this->owned = other.owned;
   other.owned = false;
@@ -117,6 +127,8 @@ void Event::dispatch_on_trigger(evutil_socket_t fd, short what, void* ctx) {
   ev->on_trigger(fd, what);
 }
 
+TimeoutEvent::TimeoutEvent() : Event() {}
+
 TimeoutEvent::TimeoutEvent(EventBase& base, const struct timeval* tv, bool persist)
     : Event(base, -1, EV_TIMEOUT | (persist ? EV_PERSIST : 0)),
       tv(*tv) {}
@@ -125,11 +137,86 @@ TimeoutEvent::TimeoutEvent(EventBase& base, uint64_t usecs, bool persist)
     : Event(base, -1, EV_TIMEOUT | (persist ? EV_PERSIST : 0)),
       tv(usecs_to_timeval(usecs)) {}
 
+TimeoutEvent::TimeoutEvent(const TimeoutEvent& other)
+    : Event(other),
+      tv(other.tv) {}
+
+TimeoutEvent::TimeoutEvent(TimeoutEvent&& other)
+    : Event(move(other)),
+      tv(move(other.tv)) {}
+
+TimeoutEvent& TimeoutEvent::operator=(const TimeoutEvent& other) {
+  this->Event::operator=(other);
+  this->tv = other.tv;
+  return *this;
+}
+
+TimeoutEvent& TimeoutEvent::operator=(TimeoutEvent&& other) {
+  this->Event::operator=(move(other));
+  this->tv = move(other.tv);
+  return *this;
+}
+
 void TimeoutEvent::add() {
   if (event_add(this->event, &this->tv)) {
     throw runtime_error("event_add");
   }
 }
 
+CallbackEvent::CallbackEvent()
+    : Event(),
+      fn(nullptr) {}
+
+CallbackEvent::CallbackEvent(EventBase& base, std::function<void()> fn, bool persist)
+    : Event(base, -1, EV_TIMEOUT | (persist ? EV_PERSIST : 0)),
+      fn(move(fn)) {}
+
+CallbackEvent::CallbackEvent(const CallbackEvent& other)
+    : Event(other),
+      fn(other.fn) {}
+
+CallbackEvent::CallbackEvent(CallbackEvent&& other)
+    : Event(move(other)),
+      fn(move(other.fn)) {}
+
+CallbackEvent& CallbackEvent::operator=(const CallbackEvent& other) {
+  this->Event::operator=(other);
+  this->fn = other.fn;
+  return *this;
+}
+
+CallbackEvent& CallbackEvent::operator=(CallbackEvent&& other) {
+  this->Event::operator=(move(other));
+  this->fn = move(other.fn);
+  return *this;
+}
+
+void CallbackEvent::call_after_usecs(uint64_t usecs) {
+  struct timeval tv = usecs_to_timeval(usecs);
+  if (event_add(this->event, &tv)) {
+    throw runtime_error("event_add");
+  }
+}
+
+void CallbackEvent::on_trigger(evutil_socket_t, short) {
+  this->fn();
+}
+
+SignalEvent::SignalEvent() : Event() {}
+
 SignalEvent::SignalEvent(EventBase& base, int signum)
     : Event(base, signum, EV_SIGNAL | EV_PERSIST) {}
+
+SignalEvent::SignalEvent(const SignalEvent& other) : Event(other) {}
+
+SignalEvent::SignalEvent(SignalEvent&& other) : Event(move(other)) {}
+
+SignalEvent& SignalEvent::operator=(const SignalEvent& other) {
+  this->Event::operator=(other);
+  return *this;
+}
+
+SignalEvent& SignalEvent::operator=(SignalEvent&& other) {
+  this->Event::operator=(move(other));
+  return *this;
+}
