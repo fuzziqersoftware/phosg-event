@@ -19,9 +19,13 @@
 #include "EventBase.hh"
 #include "Listener.hh"
 
-struct StreamClientStateBase {};
+struct StreamServerClientBase {
+  BufferEvent bev;
 
-template <typename ClientStateT = StreamClientStateBase>
+  StreamServerClientBase(BufferEvent&& bev) : bev(std::move(bev)) {}
+};
+
+template <typename ClientT = StreamServerClientBase>
 class StreamServer {
 public:
   StreamServer() = delete;
@@ -102,35 +106,18 @@ protected:
       const char* log_prefix = "[StreamServer] ")
       : base(base),
         ssl_ctx(ssl_ctx),
-        log(log_prefix) {}
-
-  struct Client {
-    BufferEvent bev;
-    struct sockaddr_storage remote_addr;
-    ClientStateT state;
-
-    Client(StreamServer* server, BufferEvent&& bev) : bev(std::move(bev)) {
-      get_socket_addresses(
-          bufferevent_getfd(this->bev.get()), nullptr, &this->remote_addr);
-
-      bufferevent_setcb(
-          this->bev.get(),
-          &StreamServer::dispatch_on_client_input,
-          nullptr,
-          &StreamServer::dispatch_on_client_error,
-          server);
-      bufferevent_enable(this->bev.get(), EV_READ | EV_WRITE);
-    }
-  };
+        log(log_prefix) {
+    static_assert(std::is_base_of<StreamServerClientBase, ClientT>::value, "Client type not derived from StreamServerClientBase");
+  }
 
   EventBase base;
   std::shared_ptr<SSL_CTX> ssl_ctx;
   std::unordered_map<int, Listener> listeners;
-  std::unordered_map<struct bufferevent*, std::shared_ptr<Client>> bev_to_client;
+  std::unordered_map<struct bufferevent*, std::shared_ptr<ClientT>> bev_to_client;
   PrefixedLogger log;
 
-  void disconnect_client(std::shared_ptr<Client> c) {
-    auto it = this->bev_to_client.find(c.bev.get());
+  void disconnect_client(std::shared_ptr<ClientT> c) {
+    auto it = this->bev_to_client.find(c->bev.get());
     if (it != this->bev_to_client.end()) {
       this->on_client_disconnect(c);
       this->bev_to_client.erase(it);
@@ -144,16 +131,22 @@ protected:
       int,
       void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
+
     BufferEvent bev(s->base, fd, BEV_OPT_CLOSE_ON_FREE, s->ssl_ctx.get());
     bufferevent* bev_ptr = bev.get();
-    auto emplace_ret = s->bev_to_client.emplace(std::piecewise_construct,
-        std::forward_as_tuple(bev_ptr),
-        std::forward_as_tuple(s, std::move(bev)));
+    bufferevent_setcb(
+        bev_ptr,
+        &StreamServer::dispatch_on_client_input,
+        nullptr,
+        &StreamServer::dispatch_on_client_error,
+        s);
+    bufferevent_enable(bev_ptr, EV_READ | EV_WRITE);
+
     try {
-      s->on_client_connect(emplace_ret.first->second);
+      auto c = s->on_client_connect(std::move(bev));
+      s->bev_to_client.emplace(bev_ptr, std::move(c));
     } catch (const std::exception& e) {
       s->log.error("Error handling client connection: %s", e.what());
-      s->disconnect_client(emplace_ret.first->second);
     }
   }
 
@@ -170,18 +163,18 @@ protected:
   static void dispatch_on_client_input(
       struct bufferevent* bev, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    std::shared_ptr<Client> c;
+    std::shared_ptr<ClientT> c;
     try {
-      c = &s->bev_to_client.at(bev);
+      c = s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
       bufferevent_free(bev);
     }
     if (c) {
       try {
-        s->on_client_input(*c);
+        s->on_client_input(c);
       } catch (const std::exception& e) {
         s->log.error("Error handling client input: %s", e.what());
-        s->disconnect_client(*c);
+        s->disconnect_client(c);
       }
     }
   }
@@ -189,9 +182,9 @@ protected:
   static void dispatch_on_client_error(
       struct bufferevent* bev, short events, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    std::shared_ptr<Client> c;
+    std::shared_ptr<ClientT> c;
     try {
-      c = &s->bev_to_client.at(bev);
+      c = s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
       bufferevent_free(bev);
     }
@@ -202,12 +195,12 @@ protected:
             err, evutil_socket_error_to_string(err));
       }
       if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
-        s->disconnect_client(*c);
+        s->disconnect_client(c);
       }
     }
   }
 
-  virtual void on_client_input(std::shared_ptr<Client>) = 0;
-  virtual void on_client_connect(std::shared_ptr<Client>) {}
-  virtual void on_client_disconnect(std::shared_ptr<Client>) {}
+  virtual std::shared_ptr<ClientT> on_client_connect(BufferEvent&& bev) = 0;
+  virtual void on_client_input(std::shared_ptr<ClientT>) = 0;
+  virtual void on_client_disconnect(std::shared_ptr<ClientT>) {}
 };
