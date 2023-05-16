@@ -142,8 +142,8 @@ TimeoutEvent::TimeoutEvent(const TimeoutEvent& other)
       tv(other.tv) {}
 
 TimeoutEvent::TimeoutEvent(TimeoutEvent&& other)
-    : Event(move(other)),
-      tv(move(other.tv)) {}
+    : Event(std::move(other)),
+      tv(std::move(other.tv)) {}
 
 TimeoutEvent& TimeoutEvent::operator=(const TimeoutEvent& other) {
   this->Event::operator=(other);
@@ -152,8 +152,8 @@ TimeoutEvent& TimeoutEvent::operator=(const TimeoutEvent& other) {
 }
 
 TimeoutEvent& TimeoutEvent::operator=(TimeoutEvent&& other) {
-  this->Event::operator=(move(other));
-  this->tv = move(other.tv);
+  this->Event::operator=(std::move(other));
+  this->tv = std::move(other.tv);
   return *this;
 }
 
@@ -169,15 +169,15 @@ CallbackEvent::CallbackEvent()
 
 CallbackEvent::CallbackEvent(EventBase& base, std::function<void()> fn, bool persist)
     : Event(base, -1, EV_TIMEOUT | (persist ? EV_PERSIST : 0)),
-      fn(move(fn)) {}
+      fn(std::move(fn)) {}
 
 CallbackEvent::CallbackEvent(const CallbackEvent& other)
     : Event(other),
       fn(other.fn) {}
 
 CallbackEvent::CallbackEvent(CallbackEvent&& other)
-    : Event(move(other)),
-      fn(move(other.fn)) {}
+    : Event(std::move(other)),
+      fn(std::move(other.fn)) {}
 
 CallbackEvent& CallbackEvent::operator=(const CallbackEvent& other) {
   this->Event::operator=(other);
@@ -186,8 +186,8 @@ CallbackEvent& CallbackEvent::operator=(const CallbackEvent& other) {
 }
 
 CallbackEvent& CallbackEvent::operator=(CallbackEvent&& other) {
-  this->Event::operator=(move(other));
-  this->fn = move(other.fn);
+  this->Event::operator=(std::move(other));
+  this->fn = std::move(other.fn);
   return *this;
 }
 
@@ -209,7 +209,7 @@ SignalEvent::SignalEvent(EventBase& base, int signum)
 
 SignalEvent::SignalEvent(const SignalEvent& other) : Event(other) {}
 
-SignalEvent::SignalEvent(SignalEvent&& other) : Event(move(other)) {}
+SignalEvent::SignalEvent(SignalEvent&& other) : Event(std::move(other)) {}
 
 SignalEvent& SignalEvent::operator=(const SignalEvent& other) {
   this->Event::operator=(other);
@@ -217,6 +217,6 @@ SignalEvent& SignalEvent::operator=(const SignalEvent& other) {
 }
 
 SignalEvent& SignalEvent::operator=(SignalEvent&& other) {
-  this->Event::operator=(move(other));
+  this->Event::operator=(std::move(other));
   return *this;
 }

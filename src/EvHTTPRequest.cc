@@ -83,7 +83,7 @@ unordered_map<string, string> EvHTTPRequest::parse_url_params_unique(
     const char* query) {
   unordered_map<string, string> ret;
   for (const auto& it : EvHTTPRequest::parse_url_params(query)) {
-    ret.emplace(it.first, move(it.second));
+    ret.emplace(it.first, std::move(it.second));
   }
   return ret;
 }

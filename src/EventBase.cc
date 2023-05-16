@@ -185,11 +185,11 @@ void EventBase::once(
 }
 
 CallbackEvent EventBase::call_next(std::function<void()> cb) {
-  return this->call_later(move(cb), 0);
+  return this->call_later(std::move(cb), 0);
 }
 
 CallbackEvent EventBase::call_later(std::function<void()> cb, uint64_t usecs) {
-  return CallbackEvent(*this, move(cb), usecs);
+  return CallbackEvent(*this, std::move(cb), usecs);
 }
 
 Event EventBase::get_running_event() {
