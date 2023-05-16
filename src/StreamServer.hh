@@ -19,13 +19,9 @@
 #include "EventBase.hh"
 #include "Listener.hh"
 
-struct StreamServerClientBase {
-  BufferEvent bev;
+struct StreamServerClientBase {};
 
-  StreamServerClientBase(BufferEvent&& bev) : bev(std::move(bev)) {}
-};
-
-template <typename ClientT = StreamServerClientBase>
+template <typename ClientStateT = StreamServerClientBase>
 class StreamServer {
 public:
   StreamServer() = delete;
@@ -100,23 +96,28 @@ public:
   }
 
 protected:
+  struct Client {
+    BufferEvent bev;
+    std::unique_ptr<ClientStateT> state;
+
+    Client(BufferEvent&& bev) : bev(std::move(bev)) {}
+  };
+
+  EventBase base;
+  std::shared_ptr<SSL_CTX> ssl_ctx;
+  std::unordered_map<int, Listener> listeners;
+  std::unordered_map<struct bufferevent*, std::shared_ptr<Client>> bev_to_client;
+  PrefixedLogger log;
+
   explicit StreamServer(
       EventBase& base,
       std::shared_ptr<SSL_CTX> ssl_ctx = nullptr,
       const char* log_prefix = "[StreamServer] ")
       : base(base),
         ssl_ctx(ssl_ctx),
-        log(log_prefix) {
-    static_assert(std::is_base_of<StreamServerClientBase, ClientT>::value, "Client type not derived from StreamServerClientBase");
-  }
+        log(log_prefix) {}
 
-  EventBase base;
-  std::shared_ptr<SSL_CTX> ssl_ctx;
-  std::unordered_map<int, Listener> listeners;
-  std::unordered_map<struct bufferevent*, std::shared_ptr<ClientT>> bev_to_client;
-  PrefixedLogger log;
-
-  void disconnect_client(std::shared_ptr<ClientT> c) {
+  void disconnect_client(std::shared_ptr<Client> c) {
     auto it = this->bev_to_client.find(c->bev.get());
     if (it != this->bev_to_client.end()) {
       this->on_client_disconnect(c);
@@ -143,7 +144,8 @@ protected:
     bufferevent_enable(bev_ptr, EV_READ | EV_WRITE);
 
     try {
-      auto c = s->on_client_connect(std::move(bev));
+      shared_ptr<Client> c(new Client(std::move(bev)));
+      s->on_client_connect(c);
       s->bev_to_client.emplace(bev_ptr, std::move(c));
     } catch (const std::exception& e) {
       s->log.error("Error handling client connection: %s", e.what());
@@ -163,7 +165,7 @@ protected:
   static void dispatch_on_client_input(
       struct bufferevent* bev, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    std::shared_ptr<ClientT> c;
+    std::shared_ptr<Client> c;
     try {
       c = s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
@@ -182,7 +184,7 @@ protected:
   static void dispatch_on_client_error(
       struct bufferevent* bev, short events, void* ctx) {
     StreamServer* s = reinterpret_cast<StreamServer*>(ctx);
-    std::shared_ptr<ClientT> c;
+    std::shared_ptr<Client> c;
     try {
       c = s->bev_to_client.at(bev);
     } catch (const std::out_of_range&) {
@@ -200,7 +202,7 @@ protected:
     }
   }
 
-  virtual std::shared_ptr<ClientT> on_client_connect(BufferEvent&& bev) = 0;
-  virtual void on_client_input(std::shared_ptr<ClientT>) = 0;
-  virtual void on_client_disconnect(std::shared_ptr<ClientT>) {}
+  virtual void on_client_connect(std::shared_ptr<Client>) {}
+  virtual void on_client_input(std::shared_ptr<Client>) = 0;
+  virtual void on_client_disconnect(std::shared_ptr<Client>) {}
 };
